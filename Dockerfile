@@ -17,4 +17,4 @@ COPY . /app/
 EXPOSE 12525
 
 # Run filesync watch when the container starts 
-CMD npm run watch
+CMD ["npm", "run", "watch"]
