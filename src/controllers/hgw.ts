@@ -89,11 +89,11 @@ async function weaken(ns: NS, targets: Set<Server>, servers: Set<Server>, dry_ru
         if(target.minDifficulty == null) continue;
 
         log.info(ns, `distributing weaken threads for target`, { host: target.hostname });
-        log.info(ns, `security: ${ns.formatNumber(target.hackDifficulty, 2)} => ${ns.formatNumber(target.minDifficulty, 2)}`, { host: target.hostname });
+        log.info(ns, `security: ${ns.format.number(target.hackDifficulty, 2)} => ${ns.format.number(target.minDifficulty, 2)}`, { host: target.hostname });
 
         // Determine the security Δ necessary to ensure the machine ends up at near its minimum security level.
         let total_security_Δ = target.hackDifficulty - target.minDifficulty;
-        log.debug(ns, `total security Δ: ${ns.formatNumber(total_security_Δ)}`, { host: target.hostname });
+        log.debug(ns, `total security Δ: ${ns.format.number(total_security_Δ)}`, { host: target.hostname });
 
         // For each controlled server, determine the amount we can weaken the security by (per thread).
         // Then start a weaken process on that node.
@@ -110,23 +110,23 @@ async function weaken(ns: NS, targets: Set<Server>, servers: Set<Server>, dry_ru
             }
 
             let ram_available = getAvailableRam(ns, server);
-            log.debug(ns, `RAM available: ${ns.formatRam(ram_available)}`, { host: server.hostname });
+            log.debug(ns, `RAM available: ${ns.format.ram(ram_available)}`, { host: server.hostname });
 
             // Calculate how many threads are available for us on the server for a weaken operation.
             let threads_available = Math.max(0, Math.floor(ram_available / ns.getScriptRam(constants.WEAKEN_SCRIPT, server.hostname)));
-            log.debug(ns, `threads available for weaken: ${ns.formatNumber(threads_available, 0)}`, { host: server.hostname });
+            log.debug(ns, `threads available for weaken: ${ns.format.number(threads_available, 0)}`, { host: server.hostname });
 
             // Determine the amount of security we need to remove from the target.
             let security_Δ_per_thread = ns.weakenAnalyze(1, server.cpuCores);
-            log.debug(ns, `security Δ per thread: ${ns.formatNumber(security_Δ_per_thread)}`, { host: server.hostname });
+            log.debug(ns, `security Δ per thread: ${ns.format.number(security_Δ_per_thread)}`, { host: server.hostname });
 
             // Determine the number of weaken threads we'll need from this server.
             let weaken_threads = Math.min(Math.floor(total_security_Δ / security_Δ_per_thread), threads_available);
-            log.debug(ns, `weaken threads determined: ${ns.formatNumber(weaken_threads, 0)}`, { host: server.hostname });
+            log.debug(ns, `weaken threads determined: ${ns.format.number(weaken_threads, 0)}`, { host: server.hostname });
 
             // Calculate the total amount of security to be removed by this server.
             let security_Δ = weaken_threads * security_Δ_per_thread;
-            log.debug(ns, `security to be removed: ${ns.formatNumber(security_Δ, 2)}`, { host: server.hostname });
+            log.debug(ns, `security to be removed: ${ns.format.number(security_Δ, 2)}`, { host: server.hostname });
 
             // Check to ensure we have weaken threads to use.
             if(weaken_threads <= 0) {
@@ -150,7 +150,7 @@ async function weaken(ns: NS, targets: Set<Server>, servers: Set<Server>, dry_ru
 
             // Adjust our total security delta.
             total_security_Δ = Math.max(0, total_security_Δ - security_Δ);
-            log.debug(ns, `total security left: ${ns.formatNumber(total_security_Δ, 2)}`, { host: target.hostname });
+            log.debug(ns, `total security left: ${ns.format.number(total_security_Δ, 2)}`, { host: target.hostname });
 
             // If we don't have any security left, break out of this loop.
             if(total_security_Δ <= 0) break;
@@ -169,21 +169,21 @@ async function grow(ns: NS, targets: Set<Server>, servers: Set<Server>, dry_run:
         // Determine the multiplier we wish to reach.
         let growth_multiplier_target = target.moneyMax / target.moneyAvailable;
         if(!Number.isFinite(growth_multiplier_target)) { continue; }
-        log.debug(ns, `growth multiplier target: ${ns.formatNumber(100 * growth_multiplier_target, 2, 1000000)}%%`, { host: target.hostname });
+        log.debug(ns, `growth multiplier target: ${ns.format.number(100 * growth_multiplier_target, 2, 1000000)}%%`, { host: target.hostname });
 
         // Estimate the number of growth threads needed.
         let estimated_growth_threads = Math.floor(ns.growthAnalyze(target.hostname, growth_multiplier_target, 1));
-        log.debug(ns, `estimated growth threads: ${ns.formatNumber(estimated_growth_threads, 0)}`, { host: target.hostname });
+        log.debug(ns, `estimated growth threads: ${ns.format.number(estimated_growth_threads, 0)}`, { host: target.hostname });
 
         // For each controlled server, determine the amount we can grow the value by (per thread).
         // Then start a growth process on that node.
         for(const server of servers) {
             let ram_available = getAvailableRam(ns, server);
-            log.debug(ns, `RAM available: ${ns.formatRam(ram_available)}`, { host: server.hostname });
+            log.debug(ns, `RAM available: ${ns.format.ram(ram_available)}`, { host: server.hostname });
 
             // Calculate how many threads are available for us on the server for a growth operation.
             let threads_available = Math.max(0, Math.floor(ram_available / ns.getScriptRam(constants.GROW_SCRIPT, server.hostname)));
-            log.debug(ns, `threads available: ${ns.formatNumber(threads_available, 0)}`, { host: target.hostname });
+            log.debug(ns, `threads available: ${ns.format.number(threads_available, 0)}`, { host: target.hostname });
 
             // Determine how many growth threads we can run on this server.
             let growth_threads = Math.min(threads_available, Math.floor(ns.growthAnalyze(target.hostname, growth_multiplier_target, server.cpuCores)));
@@ -191,7 +191,7 @@ async function grow(ns: NS, targets: Set<Server>, servers: Set<Server>, dry_run:
                 log.info(ns, `no growth threads to use, skipping server`, { host: server.hostname });
                 continue;
             }
-            log.debug(ns, `growth threads determined: ${ns.formatNumber(growth_threads, 0)}`, { host: target.hostname });
+            log.debug(ns, `growth threads determined: ${ns.format.number(growth_threads, 0)}`, { host: target.hostname });
 
             // If there's already a script growing our target on this server, then skip this server.
             if(ns.getRunningScript(constants.GROW_SCRIPT, server.hostname, target.hostname)) continue;
@@ -209,7 +209,7 @@ async function grow(ns: NS, targets: Set<Server>, servers: Set<Server>, dry_run:
 
             // Adjust our estimated growth threads count.
             estimated_growth_threads = Math.max(0, estimated_growth_threads - growth_threads);
-            log.debug(ns, `estimated growth thread remaining: ${ns.formatNumber(estimated_growth_threads, 0)}`, { host: target.hostname });
+            log.debug(ns, `estimated growth thread remaining: ${ns.format.number(estimated_growth_threads, 0)}`, { host: target.hostname });
 
             // If we don't need to grow any more, break out of this loop.
             if(estimated_growth_threads <= 0) break;
@@ -229,24 +229,24 @@ async function hack(ns: NS, targets: Set<Server>, servers: Set<Server>, dry_run:
         // Determine the amount of money we're okay with hacking away.
         let money_goal = Math.max(0, target.moneyAvailable - (0.8 * target.moneyMax));
         if(money_goal <= 0) continue;
-        log.debug(ns, `money goal determined: $${ns.formatNumber(money_goal, 0)}`, { host: target.hostname });
+        log.debug(ns, `money goal determined: $${ns.format.number(money_goal, 0)}`, { host: target.hostname });
 
         let total_hack_threads = Math.floor(ns.hackAnalyzeThreads(target.hostname, money_goal));
-        log.debug(ns, `total hack threads determined: ${ns.formatNumber(total_hack_threads, 0)}`, { host: target.hostname });
+        log.debug(ns, `total hack threads determined: ${ns.format.number(total_hack_threads, 0)}`, { host: target.hostname });
 
         // For each controlled server, determine how many threads we can allocate for hacking.
         for(const server of servers) {
             let ram_available = getAvailableRam(ns, server);
-            log.debug(ns, `RAM available: ${ns.formatRam(ram_available)}`, { host: server.hostname });
+            log.debug(ns, `RAM available: ${ns.format.ram(ram_available)}`, { host: server.hostname });
 
             // Calculate how many threads are available for us on the server for a hack operation.
             let threads_available = Math.max(0, Math.floor(ram_available / ns.getScriptRam(constants.HACK_SCRIPT, server.hostname)));
-            log.debug(ns, `threads available: ${ns.formatNumber(threads_available, 0)}`, { host: target.hostname });
+            log.debug(ns, `threads available: ${ns.format.number(threads_available, 0)}`, { host: target.hostname });
             if(threads_available <= 0) continue;
 
             // Determine the number of hack threads to use.
             let hack_threads = Math.min(threads_available, total_hack_threads);
-            log.debug(ns, `hack threads determined: ${ns.formatNumber(hack_threads, 0)}`, { host: target.hostname });
+            log.debug(ns, `hack threads determined: ${ns.format.number(hack_threads, 0)}`, { host: target.hostname });
             if(hack_threads <= 0) continue;
 
             // If there's already a script hacking our target on this server, then skip this server.
@@ -265,7 +265,7 @@ async function hack(ns: NS, targets: Set<Server>, servers: Set<Server>, dry_run:
 
             // Adjust our hack threads count.
             total_hack_threads = Math.max(0, total_hack_threads - hack_threads);
-            log.debug(ns, `total hack thread remaining: ${ns.formatNumber(total_hack_threads, 0)}`, { host: target.hostname });
+            log.debug(ns, `total hack thread remaining: ${ns.format.number(total_hack_threads, 0)}`, { host: target.hostname });
 
             // If we don't need to grow any more, break out of this loop.
             if(total_hack_threads <= 0) break;

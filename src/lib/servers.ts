@@ -26,10 +26,10 @@ function normalize(node: Server | string): string {
 function hackability(ns: NS, node: Server | string): number {
     const hostname = normalize(node);
     let server = ns.getServer(hostname);
-    if(server.moneyAvailable == null) return 0;
+    let moneyAvailable = ns.getServerMoneyAvailable(server.hostname);
 
     // Determine the portion of money one would steal with a successful, single-threaded hack.
-    let portion = server.moneyAvailable * ns.hackAnalyze(server.hostname);
+    let portion = moneyAvailable * ns.hackAnalyze(server.hostname);
 
     // Then determine the amount of money per time we'd get.
     let rate = portion / ns.getHackTime(server.hostname);
@@ -38,43 +38,6 @@ function hackability(ns: NS, node: Server | string): number {
     let effective_rate = rate * ns.hackAnalyzeChance(server.hostname);
     
     return effective_rate;
-}
-
-/**
- * Returns whether or not a server can be nuked.
- * 
- * @param node A Server object or the name of the server as a string.
- * @returns Whether or not the server can be successfully nuked.
- */
-export function isNukable(ns: NS, node: Server | string): boolean {
-    const hostname = normalize(node);
-
-    // Get the server object.
-    let server = ns.getServer(hostname);
-
-    // If any of these required server properties are undefined, return early.
-    if(server.requiredHackingSkill == null) return false;
-    if(server.openPortCount == null) return false;
-    if(server.numOpenPortsRequired == null) return false;
-
-    // Get information about the player.
-    let player = ns.getPlayer();
-
-    // Attempt to open as many ports as possible on the node.
-    if(ns.fileExists("BruteSSH.exe", constants.HOME)) ns.brutessh(server.hostname);
-    if(ns.fileExists("FTPCrack.exe", constants.HOME)) ns.ftpcrack(server.hostname);
-    if(ns.fileExists("relaySMTP.exe", constants.HOME)) ns.relaysmtp(server.hostname);
-    if(ns.fileExists("HTTPWorm.exe", constants.HOME)) ns.httpworm(server.hostname);
-    if(ns.fileExists("SQLInject.exe", constants.HOME)) ns.sqlinject(server.hostname);
-
-    // Check to ensure the player has enough hacking skill.
-    if(player.skills.hacking < server.requiredHackingSkill) return false;
-
-    // Check to ensure we have enough ports opened.
-    if((server.openPortCount < server.numOpenPortsRequired)) return false;
-
-    // Otherwise, the server should be nukable!
-    return true;
 }
 
 /**
@@ -121,14 +84,19 @@ export async function deploy(ns: NS, node: Server | string): Promise<void> {
  */
 export async function conquer(ns: NS, node: Server | string): Promise<void> {
     const hostname = normalize(node);
-    if(ns.hasRootAccess(hostname)) return;
 
-    // If the server isn't nukable, return early.
-    if(!isNukable(ns, node)) return;
+    // If we already have root access on the machine, return early.
+    if(ns.hasRootAccess(hostname)) return;
 
     // Otherwise, try and conquer the host.
     log.info(ns, `attempting to conquer node`, { host: hostname });
 
+    // Attempt to open as many ports as possible on the node.
+    ns.brutessh(hostname);
+    ns.ftpcrack(hostname);
+    ns.relaysmtp(hostname);
+    ns.httpworm(hostname);
+    ns.sqlinject(hostname);
     let success = ns.nuke(hostname);
 
     // If we weren't successful, go ahead and return.
@@ -142,6 +110,22 @@ export async function conquer(ns: NS, node: Server | string): Promise<void> {
 }
 
 /**
+ * Returns whether or not the given object is of the traditional Server object.
+ * 
+ * @param server The given object to typecheck.
+ * @returns Whether or not it is a traditional Server.
+ */
+function isServer(server: any): server is Server {
+  return server !== null
+    && typeof server === "object"
+    && typeof server.hostname === "string"
+    && typeof server.hasAdminRights === "boolean"
+    && typeof server.maxRam === "number"
+    && typeof server.ramUsed === "number";
+}
+
+
+/**
  * Returns the set of all known servers, excluding the home server.
  * 
  * @param ns The netscript object.
@@ -151,7 +135,13 @@ export async function getAllServers(ns: NS): Promise<Set<Server>> {
     let servers = new Set<Server>();
 
     await traverse(ns, async(ns: NS, node: string) => {
-        servers.add(ns.getServer(node));
+        const server = ns.getServer(node);
+
+        // If we don't have a traditional server, return early.
+        if(!isServer(server)) return;
+
+        // Otherwise, add it to the set.
+        servers.add(server);
     });
     return servers;
 }
@@ -168,8 +158,11 @@ export async function getAllHackableServers(ns: NS): Promise<Set<Server>> {
     await traverse(ns, async(ns: NS, node: string) => {
         let server = ns.getServer(node);
 
+        // If we don't have a traditional server, return early.
+        if(!isServer(server)) return;
+
         // Attempt to conquer the node.
-        await conquer(ns, server);
+        await conquer(ns, node);
 
         // If we don't control it, skip it.
         if(!server.hasAdminRights) return;
@@ -180,12 +173,12 @@ export async function getAllHackableServers(ns: NS): Promise<Set<Server>> {
         log.debug(ns, `server wasn't purchased by player`, { host: server.hostname });
 
         // If the server doesn't have any money, skip it.
-        if(server.moneyMax == null) return;
-        if(server.moneyAvailable == null) return;
+        const moneyMax = ns.getServerMaxMoney(node);
+        const moneyAvailable = ns.getServerMoneyAvailable(node);
         log.debug(ns, `server has money`, { host: server.hostname });
 
-        // Otherwise, add it to our set.
-        servers.add(ns.getServer(node));
+        // Otherwise, add it to the set.
+        servers.add(server);
     });
     return servers;
 }
@@ -216,8 +209,12 @@ export async function getAllUsableServers(ns: NS, includeHome: boolean = false):
 
     await traverse(ns, async(ns: NS, node: string) => {
         let server = ns.getServer(node);
+
+        // If we don't have a traditional server, return early.
+        if(!isServer(server)) return;
+
         if(server.hasAdminRights && server.maxRam > 0) {
-            servers.add(ns.getServer(node));
+            servers.add(server);
         }
     }, constants.HOME, !includeHome);
     return servers;
@@ -246,6 +243,9 @@ export function isHackReady(ns: NS, node: Server | string): boolean {
     const hostname = normalize(node);
 
     let server = ns.getServer(hostname);
+
+    // If we don't have a traditional server, return early.
+    if(!isServer(server)) return false;
 
     // Ensure we have admin rights on the server.
     if(!server.hasAdminRights) return false;

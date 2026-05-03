@@ -31,8 +31,10 @@ export async function getAllContracts(ns: NS): Promise<Map<string, string>> {
  * 
  * @param filename The name of the contract file.
  * @param hostname The name of the machine the contact exists on.
+ * @param dry_run Whether or not to actually attempt to solve the contract.
+ * @returns Whether or not the contract was solved.
  */
-export function solve(ns: NS, filename: string, hostname: string): boolean {
+export function solve(ns: NS, filename: string, hostname: string, dry_run: boolean): boolean {
     const contract = ns.codingcontract.getContract(filename, hostname);
     let answer = null;
     switch(contract.type) {
@@ -42,6 +44,9 @@ export function solve(ns: NS, filename: string, hostname: string): boolean {
         // case "Algorithmic Stock Trader III":
         //     answer = ast3(contract.data);
         //     break;
+        case "Total Ways to Sum":
+            answer = twts(contract.data);
+            break;
         default:
             log.error(ns, `${filename} on ${hostname} is an unknown contract!`);
             return false;  
@@ -51,8 +56,34 @@ export function solve(ns: NS, filename: string, hostname: string): boolean {
     log.info(ns, `solving ${filename} on ${hostname}`);
     log.info(ns, `${contract.type}: ${contract.data.toString()} => ${answer}`);
     log.debug(ns, `contract has ${contract.numTriesRemaining()} tries remaining`);
-    const result = contract.submit(answer);
+
+    // If we're in a dry run, then don't submit the answer.
+    if(dry_run) {
+        log.debug(ns, `not submitting answer due to dry-run...`);
+        return false;
+    }
+
+    // Otherwise, submit the answer
+    const result = contract.submit(answer.toString());
     return (result != "");
+}
+
+/**
+ * Calculate the total number of ways to sum the given number.
+ * 
+ * @param data The number to calculate the total number of ways to sum.
+ * @returns The total number of ways to sum to the given number.
+ */
+function twts(data: number): number {
+    let summations: Map<number, number> = new Map<number, number>();
+    summations.set(1, 1);
+    // summations.set(2, 1);
+    for(let ii = 2; ii < data; ii++) {
+        for(let jj = 1; jj < ii; jj++) {
+
+        }
+    }
+    return summations.get(data) || 0;
 }
 
 /**
@@ -83,15 +114,15 @@ function ast_process(data: number[]): number[] {
     for(let ii = 1; ii < duplicates_removed.length - 1; ii++) {
         const current = duplicates_removed[ii];
         const next = duplicates_removed[ii + 1];
-        const next_trend = duplicates_removed[ii + 1] > duplicates_removed[ii];
+        const next_trend = next > current;
 
         // If our trend is switching, add the current data point.
         if(trend != next_trend) {
-            processed.push(duplicates_removed[ii]);
+            processed.push(current);
         }
 
         // Reevaluate whether or not the data is rising.
-        trend = duplicates_removed[ii + 1] > duplicates_removed[ii];
+        trend = next > current;
     }
 
     // If the final trend was rising, add on the last data point.
@@ -109,7 +140,7 @@ function ast_process(data: number[]): number[] {
 //  Determine the maximum possible profit you can earn using as many transactions as you'd like. A transaction is defined as buying and then selling one share of the stock. Note that you cannot engage in multiple transactions at once. In other words, you must sell the stock before you buy it again.
 
 //  If no profit can be made, then the answer should be 0.
-export function ast2(data: number[]): string {
+export function ast2(data: number[]): number {
     // Preprocess our data.
     data = ast_process(data);
 
@@ -120,7 +151,7 @@ export function ast2(data: number[]): string {
         const final = data[ii + 1];
         profit += (final - start);
     }
-    return profit.toString();
+    return profit;
 }
 
 // Algorithmic Stock Trader III
