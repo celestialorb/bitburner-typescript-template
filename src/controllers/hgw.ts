@@ -13,7 +13,7 @@ export async function main(ns: NS): Promise<void> {
     // Define our flags.
     const flags = ns.flags([
         ["continuous", false],
-        ["delay", 10000],
+        ["delay", 1000],
         ["dry-run", false],
         ["enable-weakens", true],
         ["enable-growths", true],

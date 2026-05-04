@@ -4,8 +4,8 @@ import { NS } from "@ns";
 import { log } from "/lib/log";
 
 const BASE_NODE_INCOME = 1.5; // Base income per second for a Hacknet Node
-const MONEY_RESERVE = 250e6; // Amount of money to reserve for other purchases (e.g., servers, scripts, etc.)
-const MAX_NODES = Infinity;
+const MONEY_RESERVE = 500e3; // Amount of money to reserve for other purchases (e.g., servers, scripts, etc.)
+const MAX_NODES = 25;
 
 
 /**
@@ -19,10 +19,32 @@ const MAX_NODES = Infinity;
  * @returns A Promise that resolves when the loop is exited (typically never).
  */
 export async function main(ns: NS): Promise<void> {
+    ns.disableLog("ALL");
     while(true) {
         let upgraded = determineUpgrade(ns);
         if(!upgraded) { await ns.sleep(1000); }
     }
+}
+
+/**
+ * Determine the maximum number of HackNet servers we want for our
+ * given progress.
+ * 
+ * @param ns The netscript object.
+ * @returns The maximum number of HackNet nodes.
+ */
+function getMaxNodes(ns: NS): number {
+    return Math.max(0, Math.floor(ns.getPlayer().skills.hacking / 20));
+}
+
+/**
+ * Determine the maximum HackNet node level for each node.
+ * 
+ * @param ns The netscript object.
+ * @returns The maximum allowed HackNet level.
+ */
+function getMaxLevel(ns: NS): number {
+    return Math.min(200, Math.max(0, ns.getPlayer().skills.hacking / 2));
 }
 
 function determineUpgrade(ns: NS): boolean {
@@ -37,13 +59,13 @@ function determineUpgrade(ns: NS): boolean {
 
     const nodes = ns.hacknet.numNodes();
     for(let ii = 0; ii < nodes; ii++) {
-        var node = ns.hacknet.getNodeStats(ii);
-        var levelUpgradeCost = ns.hacknet.getLevelUpgradeCost(ii, 1);
-        var ramUpgradeCost = ns.hacknet.getRamUpgradeCost(ii, 1);
-        var coreUpgradeCost = ns.hacknet.getCoreUpgradeCost(ii, 1);
+        const node = ns.hacknet.getNodeStats(ii);
+        const levelUpgradeCost = ns.hacknet.getLevelUpgradeCost(ii, 1);
+        const ramUpgradeCost = ns.hacknet.getRamUpgradeCost(ii, 1);
+        const coreUpgradeCost = ns.hacknet.getCoreUpgradeCost(ii, 1);
         // var cacheUpgradeCost = ns.hacknet.getCacheUpgradeCost(ii, 1);
 
-        if(levelUpgradeCost < cheapestUpgradeCost) {
+        if(levelUpgradeCost < cheapestUpgradeCost && node.level < getMaxLevel(ns)) {
             cheapestUpgradeCost = levelUpgradeCost;
             cheapestUpgradeNode = ii;
             cheapestUpgradeType = "level";
@@ -70,7 +92,7 @@ function determineUpgrade(ns: NS): boolean {
 
     // Then, compare it against purchasing an entirely new node.
     var newNodeCost = ns.hacknet.getPurchaseNodeCost();
-    if(newNodeCost < cheapestUpgradeCost && ns.hacknet.numNodes() < MAX_NODES) {
+    if(newNodeCost < cheapestUpgradeCost && ns.hacknet.numNodes() < getMaxNodes(ns)) {
         cheapestUpgradeCost = newNodeCost;
         cheapestUpgradeNode = -1;
         cheapestUpgradeType = "new";
@@ -78,7 +100,7 @@ function determineUpgrade(ns: NS): boolean {
 
     // If we have enough money to purchase the cheapest upgrade, do it.
     if(ns.getPlayer().money >= (cheapestUpgradeCost + MONEY_RESERVE)) {
-        log.debug(ns, `purchasing hacknet upgrade: ${cheapestUpgradeType} for hacknet-node-${cheapestUpgradeNode} for $${ns.formatNumber(cheapestUpgradeCost, 0)}`)
+        log.debug(ns, `purchasing hacknet upgrade: ${cheapestUpgradeType} for hacknet-node-${cheapestUpgradeNode} for $${ns.format.number(cheapestUpgradeCost, 0)}`)
 
         switch(cheapestUpgradeType) {
             case "level":

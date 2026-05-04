@@ -4,7 +4,7 @@
 // - grow the money on the server
 // - hack the server for money
 import { NS } from "@ns";
-import { colors } from "../lib/util";
+import { log } from "/lib/log";
 
 const WEAKEN_SECURITY_DELTA = 0.05;
 
@@ -16,7 +16,8 @@ export async function main(ns: NS) {
   if(ns.args.length > 0) {
     target = ns.args[0] as string;
   }
-  ns.printf(`skimming server ${colors.red}%s${colors.reset}...`, target);
+  // ns.printf(`skimming server ${colors.red}%s${colors.reset}...`, target);
+  log.info(ns, `skimming server`, { host: target });
 
   if(target == "home") return;
   await simple_skim(ns, target);
@@ -48,7 +49,7 @@ async function simple_skim(ns: NS, host: string): Promise<void> {
 
     // Determine if we need to perform a weaken action.
     if(securityLevel > (minSecurityLevel + threads * WEAKEN_SECURITY_DELTA)) {
-      ns.printf(`weakening ${colors.red}%s${colors.reset} due to high security level (%.2f > %.2f)...`, host, securityLevel, minSecurityLevel + threads * WEAKEN_SECURITY_DELTA);
+      // ns.printf(`weakening ${colors.red}%s${colors.reset} due to high security level (%.2f > %.2f)...`, host, securityLevel, minSecurityLevel + threads * WEAKEN_SECURITY_DELTA);
       await ns.weaken(host);
       continue;
     }
@@ -57,16 +58,16 @@ async function simple_skim(ns: NS, host: string): Promise<void> {
     if(ns.getHackingLevel() >= requiredHackingLevel && moneyAvailable >= (0.75 * maxMoney)) {
       var money = await ns.hack(host);
       if(money <= 0) {
-        ns.printf(`failed to hack ${colors.red}%s${colors.reset}...`, host);
+        // ns.printf(`failed to hack ${colors.red}%s${colors.reset}...`, host);
         continue;
       }
-      ns.printf(`hacked %s for ${colors.green}$%s${colors.reset} (%.2f%% of max money)`, host, ns.formatNumber(money), (money / maxMoney) * 100);
-      ns.toast(`hacked ${host} for $${ns.formatNumber(money)}`, "success", 2500);
+      // ns.printf(`hacked %s for ${colors.green}$%s${colors.reset} (%.2f%% of max money)`, host, ns.formatNumber(money), (money / maxMoney) * 100);
+      ns.toast(`hacked ${host} for $${ns.format.number(money)}`, "success", 2500);
       continue;
     }
 
     // Otherwise grow the server.
-    ns.printf(`growing ${colors.red}%s${colors.reset} due to insufficient money (%.2f%% of max money)...`, host, (moneyAvailable / maxMoney) * 100);
+    // ns.printf(`growing ${colors.red}%s${colors.reset} due to insufficient money (%.2f%% of max money)...`, host, (moneyAvailable / maxMoney) * 100);
     await ns.grow(host);
   }
 }

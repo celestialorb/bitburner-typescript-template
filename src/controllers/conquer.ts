@@ -6,35 +6,25 @@
 import { NS } from "@ns";
 import { log } from "/lib/log";
 import { traverse } from "/lib/util";
+import { conquer } from "/lib/servers";
+
+const SKIM_SCRIPT = "/deploy/skim.js";
 
 export async function main(ns: NS): Promise<void> {
     ns.disableLog("ALL");
 
     while(true) {
-        await traverse(ns, conquer);
-        ns.run("/main.js", {}, "deploy");
-        await ns.sleep(10000);
-    }
-}
-
-async function conquer(ns: NS, host: string = "home"): Promise<void> {
-    // Try and conquer the host.
-    if(!ns.hasRootAccess(host)) {
-        // ns.printf(`attempting to conquer ${colors.red}%s${colors.reset}...`, host);
-        log.debug(ns, `attempting to conquer`)
-
-        // Try to gain root access to the host using all available methods.
-        if(ns.fileExists("BruteSSH.exe", "home")) ns.brutessh(host);
-        if(ns.fileExists("FTPCrack.exe", "home")) ns.ftpcrack(host);
-        if(ns.fileExists("HTTPWorm.exe", "home")) ns.httpworm(host);
-        if(ns.fileExists("SQLInject.exe", "home")) ns.sqlinject(host);
-
-        try {
-            ns.nuke(host);
-            ns.printf(ns.sprintf(`successfully conquered ${colors.green}%s${colors.reset}!`, host));
-            ns.toast(`successfully conquered ${host}`, "success", 10000);
-        } catch (e) {
-            ns.printf(`failed to conquer ${colors.red}%s${colors.reset}`, host);
-        }
+        await traverse(ns, async(ns: NS, node: string) => {
+            await conquer(ns, node);
+            const memory = ns.getScriptRam(SKIM_SCRIPT, node);
+            const threads = Math.max(0, Math.floor(ns.getServerMaxRam(node) / memory));
+            if(threads <= 0) return;
+            if(!isFinite(threads)) return;
+            if(isNaN(threads)) return;
+            if(!ns.getRunningScript(SKIM_SCRIPT, node)) {
+                ns.exec(SKIM_SCRIPT, node, { threads: threads });
+            }
+        });
+        await ns.sleep(1000);
     }
 }

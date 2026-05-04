@@ -19,7 +19,7 @@ export async function hack(ns: NS, host: string): Promise<number> {
     if(!earned) {
         log.info(ns, `failed to hack target`, { host: host });
     } else {
-        log.info(ns, `hacked target for $${ns.formatNumber(earned, 2)}`, { host: host });
+        log.info(ns, `hacked target for $${ns.format.number(earned, 2)}`, { host: host });
     }
     return earned;
 }
@@ -37,7 +37,7 @@ export async function grow(ns: NS, host: string, threads: number = 1): Promise<n
     if(threads <= 0) { return 0; }
     log.info(ns, `performing growth`, { host: host });
     let growth = await ns.grow(host);
-    log.info(ns, `grew target by ${ns.formatNumber(growth, 2, 1000000)}%%`, { host: host });
+    log.info(ns, `grew target by ${ns.format.number(growth, 2, 1000000)}%%`, { host: host });
     return growth;
 }
 
@@ -53,7 +53,7 @@ export async function weaken(ns: NS, host: string): Promise<number> {
     // If we aren't given any threads to weaken with, simply return.
     log.info(ns, `performing weaken`, { host: host });
     let weakened = await ns.weaken(host);
-    log.info(ns, `weakened target by ${ns.formatNumber(weakened, 2)}`, { host: host });
+    log.info(ns, `weakened target by ${ns.format.number(weakened, 2)}`, { host: host });
     return weakened;
 }
 
@@ -85,38 +85,38 @@ export function analyze(ns: NS, host: string, threads: number, cores: number = 1
     // (i.e. threads) needed to weaken the host to its minimum state.
     let security_delta = ns.weakenAnalyze(1, cores);
     let security_delta_goal = ns.getServerSecurityLevel(host) - ns.getServerMinSecurityLevel(host);
-    log.debug(ns, `security Δ (per thread): ${ns.formatNumber(security_delta, 2)}`, { host: host });
-    log.debug(ns, `security Δ goal: ${ns.formatNumber(security_delta_goal, 2)}`, { host: host });
+    log.debug(ns, `security Δ (per thread): ${ns.format.number(security_delta, 2)}`, { host: host });
+    log.debug(ns, `security Δ goal: ${ns.format.number(security_delta_goal, 2)}`, { host: host });
 
     // The number of threads we need for a weaken are the number of threads we have, or
     // the number of threads needed to lower the host to its minimum security level (minus 1) --
     // whichever is smaller.
     let weaken_threads = Math.min(Math.floor(security_delta_goal / security_delta), threads);
-    log.debug(ns, `weaken threads: ${ns.formatNumber(weaken_threads, 2)}`, { host: host });
+    log.debug(ns, `weaken threads: ${ns.format.number(weaken_threads, 2)}`, { host: host });
 
     // Adjust our remaining threads.
     threads -= weaken_threads;
-    log.debug(ns, `remaining threads: ${ns.formatNumber(threads, 2)}`, { host: host });
+    log.debug(ns, `remaining threads: ${ns.format.number(threads, 2)}`, { host: host });
 
     // Now, we prioritize growing a server second, so let's perform something similar.
     let money_delta_multiplier_goal = ns.getServerMaxMoney(host) / ns.getServerMoneyAvailable(host);
-    log.debug(ns, `server money (MAX): $${ns.formatNumber(ns.getServerMaxMoney(host))}`, { host: host });
-    log.debug(ns, `server money (available): $${ns.formatNumber(ns.getServerMoneyAvailable(host))}`, { host: host });
+    log.debug(ns, `server money (MAX): $${ns.format.number(ns.getServerMaxMoney(host))}`, { host: host });
+    log.debug(ns, `server money (available): $${ns.format.number(ns.getServerMoneyAvailable(host))}`, { host: host });
 
     let growth_threads = threads;
     if(Number.isFinite(money_delta_multiplier_goal)) {
-        log.debug(ns, `money Δ multiplier goal: ${ns.formatNumber(money_delta_multiplier_goal)}`, { host: host });
+        log.debug(ns, `money Δ multiplier goal: ${ns.format.number(money_delta_multiplier_goal)}`, { host: host });
         growth_threads = Math.min(ns.growthAnalyze(host, money_delta_multiplier_goal, cores), growth_threads);
     }
-    log.debug(ns, `growth threads: ${ns.formatNumber(growth_threads, 2)}`, { host: host });
+    log.debug(ns, `growth threads: ${ns.format.number(growth_threads, 2)}`, { host: host });
 
     // Again, adjust our remaining threads.
     threads -= growth_threads;
-    log.debug(ns, `remaining threads: ${ns.formatNumber(threads, 2)}`, { host: host });
+    log.debug(ns, `remaining threads: ${ns.format.number(threads, 2)}`, { host: host });
 
     // Whatever threads are left, we should use to hack the server.
     let hack_threads = threads;
-    log.debug(ns, `hack threads: ${ns.formatNumber(hack_threads, 2)}`, { host: host });
+    log.debug(ns, `hack threads: ${ns.format.number(hack_threads, 2)}`, { host: host });
 
     return {
         hack: hack_threads,
