@@ -4,7 +4,7 @@
 
 import { NS } from "@ns";
 import { log } from "/lib/log";
-import { traverse } from "/lib/util";
+import { constants, traverse } from "/lib/util";
 
 /**
  * Finds all unsolved contracts on the network.
@@ -27,6 +27,19 @@ export async function getAllContracts(ns: NS): Promise<Map<string, string>> {
 }
 
 /**
+ * Generates dummy contracts for each type.
+ * 
+ * @param ns The netscript object.
+ */
+export function generate(ns: NS): void {
+    const contractTypes = ns.codingcontract.getContractTypes();
+    for(const contractType of contractTypes) {
+        const filename = ns.codingcontract.createDummyContract(contractType, constants.HOME);
+        log.info(ns, `generated ${contractType}@${filename}`, { host: constants.HOME });
+    }
+}
+
+/**
  * Solves a given contract by determining the solution and submitting it.
  * 
  * @param filename The name of the contract file.
@@ -41,9 +54,9 @@ export function solve(ns: NS, filename: string, hostname: string, dry_run: boole
         case "Algorithmic Stock Trader II":
             answer = ast2(contract.data);
             break;
-        // case "Algorithmic Stock Trader III":
-        //     answer = ast3(contract.data);
-        //     break;
+        case "Algorithmic Stock Trader III":
+            answer = ast3(contract.data);
+            break;
         case "Total Ways to Sum":
             answer = twts(contract.data);
             break;
@@ -162,17 +175,27 @@ export function ast2(data: number[]): number {
 //  Determine the maximum possible profit you can earn using at most two transactions. A transaction is defined as buying and then selling one share of the stock. Note that you cannot engage in multiple transactions at once. In other words, you must sell the stock before you buy it again.
 
 //  If no profit can be made, then the answer should be 0.
-export function ast3(data: number[]): string {
-    let largest = 0;
-    for(let ii = 0; ii < data.length - 1; ii++) {
-        for(let jj = ii + 1; jj < data.length; jj++) {
-            const profit = data[jj] - data[ii];
-            if(profit > largest) {
-                largest = profit;
-            }
-        }
+export function ast3(data: number[]): number {
+    // Preprocess our data to return only pairs of trends.
+    data = ast_process(data);
+
+    // Calculate potential profit from each pair.
+    let profits = [];
+    for(let ii = 0; ii < data.length; ii += 2) {
+        const start = data[ii];
+        const final = data[ii + 1];
+        profits.push(final - start);
     }
-    return largest.toString();
+
+    // Sort our potential profits.
+    profits = profits.sort().reverse();
+
+    // Edge cases: handle no trends to profit upon, and handle only one trend.
+    if(profits.length <= 0) return 0;
+    if(profits.length == 1) return profits[0];
+
+    // Return the total of the two highest pairs.
+    return profits[0] + profits[1];
 }
 
 // Algorithmic Stock Trader IV
