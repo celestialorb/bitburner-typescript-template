@@ -57,6 +57,9 @@ export function solve(ns: NS, filename: string, hostname: string, dry_run: boole
         case "Algorithmic Stock Trader III":
             answer = ast3(contract.data);
             break;
+        case "Total Number of Primes":
+            answer = primes(contract.data);
+            break;
         case "Total Ways to Sum":
             answer = twts(contract.data);
             break;
@@ -81,10 +84,58 @@ export function solve(ns: NS, filename: string, hostname: string, dry_run: boole
     return (result != "");
 }
 
+
+// Total Number of Primes
+// You are attempting to solve a Coding Contract. You have 10 tries remaining, after which the contract will self-destruct.
+
+
+// You are given two random non-negative integers: 1920364,2061793. 
+//  The first will be up to 5000000, and the second will be at most 1000000 greater. 
+//  Determine the amount of prime numbers between them (including the numbers given). 
+ 
+//  Example: 
+//  The range of [0,20] contains the primes [2,3,5,7,11,13,17,19], resulting in an answer of 8. 
+/**
+ * Calculate the number of primes between the two given elements.
+ * 
+ * @param data A two-element array of non-negative integers.
+ * @returns The number of primes between the two integers given.
+ */
+function primes(data: number[]): number {
+    // Sanity check our input by sorting it.
+    data = data.sort();
+
+    // Keep record of any primes between our integers.
+    let count = 0;
+
+    // Start by generating a prime sieve up to the larger integer.
+    const start = data[0];
+    const final = data[1];
+    let primes: number[] = [];
+    for(let ii = 2; ii <= final; ii++) {
+        for(const prime of primes) {
+            // If our test number is divisible by one of our primes, then break out the loop early.
+            if(ii % prime == 0) break;
+            
+            // If we've reached over half of our square root of the test number, break out of the loop early.
+            if(prime * prime > ii) break;
+        }
+
+        // Otherwise, we've found a prime, add it to our collection.
+        primes.push(ii);
+
+        // If this prime is between our integers, then count it.
+        if(start <= ii && ii <= final) count++;
+    }
+
+    // Generate a prime sieve, then iterate through it to find all primes inbetween.
+    return count;
+}
+
 /**
  * Calculate the total number of ways to sum the given number.
  * 
- * @param data The number to calculate the total number of ways to sum.
+ * @param data The number to calculate the total number of ways to sum.TODO
  * @returns The total number of ways to sum to the given number.
  */
 function twts(data: number): number {
