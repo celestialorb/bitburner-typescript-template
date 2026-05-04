@@ -88,13 +88,37 @@ export function solve(ns: NS, filename: string, hostname: string, dry_run: boole
  * @returns The total number of ways to sum to the given number.
  */
 function twts(data: number): number {
+    // Create a cache of answers for previously evaluated inputs.
     let summations: Map<number, number> = new Map<number, number>();
-    summations.set(1, 1);
-    // summations.set(2, 1);
-    for(let ii = 2; ii < data; ii++) {
-        for(let jj = 1; jj < ii; jj++) {
 
+    // Prime the cache with the number of summations for the number 1.
+    summations.set(1, 0);
+
+    // The iterator variable ii represents the number we're trying to determine
+    // the number of summations.
+    for(let ii = 2; ii <= data; ii++) {
+        let totalSummations = 0;
+        const first = (summations.get(ii - 1) || 0) + 1;
+        const second = (ii - first);
+
+        // The iterator variable jj represents the "anchor" summation that we're calculating.
+        for(let jj = ii - 1; jj > ii / 2; jj--) {
+            // Each number can be broken apart into two "summations".
+            // The total number of ways to sum to the current number
+            // is then the number of ways to sum to the first number
+            // multiplied by the second number (plus one).
+            //
+            // For example, the total number of ways to sum to the number
+            // 3 is 2:
+            // 2 + 1
+            // 1 + 1 + 1
+            // This is because there is only one way to represent the number 1,
+            // and two ways to sum to the number 2, one of which is the number itself.
+            const sums = ((summations.get(jj) || 0) + 1) * ((summations.get(ii)  || 0) + 1);
         }
+        
+        // Record the total number of different summations 
+        summations.set(ii, totalSummations);
     }
     return summations.get(data) || 0;
 }
