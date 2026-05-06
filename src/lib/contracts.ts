@@ -63,6 +63,9 @@ export function solve(ns: NS, filename: string, hostname: string, dry_run: boole
         case "Total Ways to Sum":
             answer = twts(contract.data);
             break;
+        case "Spiralize Matrix":
+            answer = spiralize(contract.data);
+            break;
         default:
             log.error(ns, `${filename} on ${hostname} is an unknown contract!`);
             return false;  
@@ -82,6 +85,47 @@ export function solve(ns: NS, filename: string, hostname: string, dry_run: boole
     // Otherwise, submit the answer
     const result = contract.submit(answer.toString());
     return (result != "");
+}
+
+// Spiralize Matrix
+// Given an array of array of numbers representing a 2D matrix, return the
+// elements of that matrix in clockwise spiral order.
+
+// Example: The spiral order of
+
+// [1, 2, 3, 4]
+// [5, 6, 7, 8]
+// [9, 10, 11, 12]
+
+// is [1, 2, 3, 4, 8, 12, 11, 10, 9, 5, 6, 7]
+/**
+ * Return the spiral order of a matrix.
+ * 
+ * @param data The 2D matrix.
+ * @return The 1D array of the elements of the matrix in clockwise spiral order.
+ */
+function spiralize(data: number[][]): number[] {
+    // Declare our unspiralized matrix result.
+    let result: number[] = [];
+
+    // Declare our direction.
+    let toTheRight = true;
+
+    // For each row of the matrix.
+    for(let row = 0; row < data.length; row++) {
+        let rowData = data[row];
+        for(let col = 0; col < rowData.length; col++) {
+            let colIndex = col;
+            if(!toTheRight) { colIndex = (rowData.length - 1) - col; }
+
+            let value = rowData[colIndex];
+            result.push(value);
+        }
+        toTheRight = !toTheRight;
+    }
+
+    // Return our result.
+    return result;
 }
 
 
