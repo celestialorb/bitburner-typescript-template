@@ -4,7 +4,7 @@
 
 import { NS } from "@ns";
 import { log } from "/lib/log";
-import { getAllContracts, generate, solve } from "/lib/contracts";
+import { getAllContracts, generate, solve, test } from "/lib/contracts";
 
 let FAILED_CONTRACTS = new Set<string>();
 
@@ -19,16 +19,24 @@ export async function main(ns: NS): Promise<void> {
         ["dry-run", false],
         ["generate", false],
         ["list", false],
+        ["test", false],
     ]);
     const continuous = flags["continuous"] as boolean;
     const delay = flags["delay"] as number;
     const dry_run = flags["dry-run"] as boolean;
     const generateContracts = flags["generate"] as boolean;
     const list = flags["list"] as boolean;
+    const testContracts = flags["test"] as boolean;
 
     // If we're set to generate contracts, simply do that then return.
     if(generateContracts) {
         generate(ns);
+        return;
+    }
+
+    // If we're set to test our contract solutions, simply do that and return.
+    if(testContracts) {
+        test(ns);
         return;
     }
 

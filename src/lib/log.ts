@@ -10,17 +10,19 @@ export function setTerminal(terminal: boolean) {
 }
 
 enum LogLevel {
-  INFO = "INFO",
-  WARN = "WARN",
-  ERROR = "ERRO",
-  DEBUG = "DEBG"
+    SUCC = "SUCC",
+    INFO = "INFO",
+    WARN = "WARN",
+    ERROR = "ERRO",
+    DEBUG = "DEBG"
 }
 
 const LogLevelColors: Record<LogLevel, string> = {
-  [LogLevel.INFO]: colors.blue,
-  [LogLevel.WARN]: colors.yellow,
-  [LogLevel.ERROR]: colors.red,
-  [LogLevel.DEBUG]: colors.magenta,
+    [LogLevel.SUCC]: colors.green,
+    [LogLevel.INFO]: colors.blue,
+    [LogLevel.WARN]: colors.yellow,
+    [LogLevel.ERROR]: colors.red,
+    [LogLevel.DEBUG]: colors.magenta,
 };
 
 type LogMessageContext = {
@@ -87,6 +89,17 @@ function debug(ns: NS, msg: string, context: LogMessageContext = {}): void {
 }
 
 /**
+ * Logs a message from the script at the SUCCESS level.
+ * 
+ * @param ns Netscript object.
+ * @param msg The message to log.
+ * @param context Additional logging context, such as the host.
+ */
+function success(ns: NS, msg: string, context: LogMessageContext = {}): void {
+    write(ns, msg, LogLevel.SUCC, context);
+}
+
+/**
  * Logs a message from the script at the INFO level.
  * 
  * @param ns Netscript object.
@@ -120,6 +133,7 @@ function error(ns: NS, msg: string, context: LogMessageContext = {}): void {
 }
 
 export const log = {
+    success,
     debug,
     info,
     warn,
